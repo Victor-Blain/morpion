@@ -107,9 +107,12 @@ unsigned int CountGrid(unsigned short *tab){
 int min_max(unsigned short *tab, unsigned short profondeur, unsigned short actual_player){
   unsigned short IA = 2;
   unsigned short player = 1;
-  int score, best_score=0, worse_score=0;
+  int score, best_score=-10000, worse_score=10000;
 
-  if (GridFull(tab) || profondeur == 0) return CountGrid(tab);
+  if (HaveWin(tab)==1) return -1000;
+  if (HaveWin(tab)==2) return 1000;
+  if (GridFull(tab)) return 0;
+  if (profondeur == 0) return CountGrid(tab);
   if(actual_player == IA){
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
@@ -130,8 +133,8 @@ int min_max(unsigned short *tab, unsigned short profondeur, unsigned short actua
         if (score<worse_score) worse_score=score;
       }
     }
-  }
-  
+  return worse_score;
+  } 
 }
 
 int main(){
