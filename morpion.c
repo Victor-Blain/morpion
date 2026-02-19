@@ -2,7 +2,7 @@
 #define NBROW 3
 #define NBCOLUMN 3
 #define NBSQUARE NBROW*NBCOLUMN
-#define DEPTH 10
+#define DEPTH 3
 #define IA 2
 #define PLAYER 1
 
@@ -89,7 +89,7 @@ unsigned int Eval(unsigned short *tab, unsigned short player){
     if ((tab[i]==tab[i+3])&&(tab[i+6]==0)&&(tab[i]==player)) sum +=1000;
     if ((tab[i]==tab[i+6])&&(tab[i+3]==0)&&(tab[i]==player)) sum +=1000;
     if ((tab[i+3]==tab[i+6])&&(tab[i]==0)&&(tab[i]==player)) sum +=1000;
-  } 
+  }
 
   // diagonal verification
   if ((tab[0]==tab[4])&&(tab[8]==0)&&(tab[0]==player)) sum +=1000;
@@ -110,8 +110,8 @@ unsigned int CountGrid(unsigned short *tab){
 int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_player){
   int score, best_score=-10000, worse_score=10000;
 
-  if (HaveWin(tab)==1) return -1000;
-  if (HaveWin(tab)==2) return 1000;
+  if (HaveWin(tab)==1) return -15000;
+  if (HaveWin(tab)==2) return 15000;
   if (GridFull(tab)) return 0;
   if (depth == 0) return CountGrid(tab);
   if(actual_player == IA){
@@ -140,7 +140,7 @@ int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_pla
 
 unsigned short best_shot(unsigned short *tab,unsigned short depth) {
   unsigned short position=10;
-  int score, best_shot=-1000;
+  int score, best_shot=0;
   for (int i=0;i<NBSQUARE;i++) {
     if (tab[i]==0) {
       score = min_max(tab,DEPTH, 2);
@@ -150,24 +150,32 @@ unsigned short best_shot(unsigned short *tab,unsigned short depth) {
       }
     }
   }
-  if (position==10) printf("On a un soucis dans la fonction best_shot\n");
+  if (position==10) printf("ALERTE ROUGE !!!!!\n");
   return position;
 }
 
 void game_contre_IA(){
   unsigned short tab[NBSQUARE], position, win=0;
   CreateGrid(tab);
-  while (!(win)) {
-    printf("A VOUS DE JOUER\n"); // a modifier
+  for(;;) {
+    printf("Your turn\n");
     ShowGrid(tab);
     position = AskPosition(tab, PLAYER);
     PutPiece(tab, position, PLAYER);
     ShowGrid(tab);
-    if (HaveWin(tab)) win=1;
-    printf("L'IA VA JOUER\n"); // a modifier
+    if (HaveWin(tab)) {
+      printf("You win !!!\n");
+      break;
+    }
+    if (GridFull(tab)) printf("The grid is full, draw ! \n");
+    printf("IA turn\n");
     position = best_shot(tab, DEPTH);
     PutPiece(tab, position, IA);
-    if (HaveWin(tab)) win=1;
+    if (HaveWin(tab)) {
+      printf("You lose...\n");
+      break;
+    }
+    if (GridFull(tab)) printf("The grid is full, draw ! \n");
   }
 }
 
