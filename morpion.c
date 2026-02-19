@@ -2,6 +2,9 @@
 #define NBROW 3
 #define NBCOLUMN 3
 #define NBSQUARE NBROW*NBCOLUMN
+#define DEPTH 10
+#define IA 2
+#define PLAYER 1
 
 void CreateGrid(unsigned short *tab){
   for (int i=0; i<NBSQUARE;i++) tab[i]= 0;
@@ -38,7 +41,7 @@ unsigned short HaveWinDiagonal(unsigned short *tab) {
 unsigned short HaveWin(unsigned short *tab) {
   if (HaveWinRow(tab)) return HaveWinRow(tab);
   else if (HaveWinColumn(tab)) return HaveWinColumn(tab);
-  else if (HaveWinDiagonal) return HaveWinDiagonal(tab);
+  else if (HaveWinDiagonal(tab)) return HaveWinDiagonal(tab);
   else return 0;
 }
 
@@ -78,24 +81,24 @@ unsigned int Eval(unsigned short *tab, unsigned short player){
   }
   for(int i=0;i<NBROW;i++){
     // horizontal evaluation
-    if ((tab[i*3]==tab[1+i*3])&&(tab[i*3]=player)&&(tab[2+i*3]==0)) sum += 1000;
+    if ((tab[i*3]==tab[1+i*3])&&(tab[i*3]==player)&&(tab[2+i*3]==0)) sum += 1000;
     if ((tab[i*3]==tab[i*3+2])&&(tab[i*3+1]==0)&&(tab[i*3]==player)) sum +=1000;
     if ((tab[i*3+1]==tab[i*3+2])&&(tab[i*3]==0)&&(tab[i*3+1]==player)) sum +=1000;
 
     // vertical evaluation
-    if ((tab[i]==tab[i+3])&&(tab[i+6]==0)&&(tab[i]==player)) return sum +=1000;
-    if ((tab[i]==tab[i+6])&&(tab[i+3]==0)&&(tab[i]==player)) return sum +=1000;
-    if ((tab[i+3]==tab[i+6])&&(tab[i]==0)&&(tab[i]==player)) return sum +=1000;
+    if ((tab[i]==tab[i+3])&&(tab[i+6]==0)&&(tab[i]==player)) sum +=1000;
+    if ((tab[i]==tab[i+6])&&(tab[i+3]==0)&&(tab[i]==player)) sum +=1000;
+    if ((tab[i+3]==tab[i+6])&&(tab[i]==0)&&(tab[i]==player)) sum +=1000;
   } 
 
   // diagonal verification
-  if ((tab[0]==tab[4])&&(tab[8]==0)&&(tab[0]==player)) return sum +=1000;
-  if ((tab[8]==tab[4])&&(tab[0]==0)&&(tab[8]==player)) return sum +=1000;
-  if ((tab[0]==tab[8])&&(tab[4]==0)&&(tab[0]==player)) return sum +=1000;
+  if ((tab[0]==tab[4])&&(tab[8]==0)&&(tab[0]==player)) sum +=1000;
+  if ((tab[8]==tab[4])&&(tab[0]==0)&&(tab[8]==player)) sum +=1000;
+  if ((tab[0]==tab[8])&&(tab[4]==0)&&(tab[0]==player)) sum +=1000;
 
-  if ((tab[2]==tab[4])&&(tab[6]==0)&&(tab[2]==player)) return sum +=1000;
-  if ((tab[2]==tab[6])&&(tab[4]==0)&&(tab[2]==player)) return sum +=1000;
-  if ((tab[4]==tab[6])&&(tab[2]==0)&&(tab[4]==player)) return sum +=1000;
+  if ((tab[2]==tab[4])&&(tab[6]==0)&&(tab[2]==player)) sum +=1000;
+  if ((tab[2]==tab[6])&&(tab[4]==0)&&(tab[2]==player)) sum +=1000;
+  if ((tab[4]==tab[6])&&(tab[2]==0)&&(tab[4]==player)) sum +=1000;
 
   return sum;
 }
@@ -104,31 +107,29 @@ unsigned int CountGrid(unsigned short *tab){
   return Eval(tab, 2) - Eval(tab,1);
 }
 
-int min_max(unsigned short *tab, unsigned short profondeur, unsigned short actual_player){
-  unsigned short IA = 2;
-  unsigned short player = 1;
+int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_player){
   int score, best_score=-10000, worse_score=10000;
 
   if (HaveWin(tab)==1) return -1000;
   if (HaveWin(tab)==2) return 1000;
   if (GridFull(tab)) return 0;
-  if (profondeur == 0) return CountGrid(tab);
+  if (depth == 0) return CountGrid(tab);
   if(actual_player == IA){
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
         tab[i] = IA;
-        score = min_max(tab, profondeur-1, player);
+        score = min_max(tab, depth-1, PLAYER);
         tab[i] = 0;
         if (score>best_score) best_score=score;
       }
     }
     return best_score;
   }
-  if (actual_player == player) {
+  if (actual_player == PLAYER) {
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
-        tab[i] = player;
-        score = min_max(tab, profondeur-1, IA);
+        tab[i] = PLAYER;
+        score = min_max(tab, depth-1, IA);
         tab[i] = 0;
         if (score<worse_score) worse_score=score;
       }
@@ -137,19 +138,40 @@ int min_max(unsigned short *tab, unsigned short profondeur, unsigned short actua
   } 
 }
 
-int main(){
-  unsigned short tab[NBSQUARE]; 
-  unsigned short position;
-  CreateGrid(tab);
-  while (!(HaveWin(tab))) {
-    ShowGrid(tab);
-    position = AskPosition(tab,1);
-    PutPiece(tab, position, 1);
-    ShowGrid(tab);
-    position = AskPosition(tab,2);
-    PutPiece(tab, position,2);
-    printf("Le score pour cette grile est de %d: \n", Eval(tab,1));
+unsigned short best_shot(unsigned short *tab,unsigned short depth) {
+  unsigned short position=10;
+  int score, best_shot=-1000;
+  for (int i=0;i<NBSQUARE;i++) {
+    if (tab[i]==0) {
+      score = min_max(tab,DEPTH, 2);
+      if (score>best_shot) {
+        best_shot = score;
+        position=i;
+      }
+    }
   }
-  ShowGrid(tab);
+  if (position==10) printf("On a un soucis dans la fonction best_shot\n");
+  return position;
+}
+
+void game_contre_IA(){
+  unsigned short tab[NBSQUARE], position, win=0;
+  CreateGrid(tab);
+  while (!(win)) {
+    printf("A VOUS DE JOUER\n"); // a modifier
+    ShowGrid(tab);
+    position = AskPosition(tab, PLAYER);
+    PutPiece(tab, position, PLAYER);
+    ShowGrid(tab);
+    if (HaveWin(tab)) win=1;
+    printf("L'IA VA JOUER\n"); // a modifier
+    position = best_shot(tab, DEPTH);
+    PutPiece(tab, position, IA);
+    if (HaveWin(tab)) win=1;
+  }
+}
+
+int main(){
+  game_contre_IA();
   return 0;
 }
