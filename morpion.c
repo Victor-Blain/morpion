@@ -2,7 +2,7 @@
 #define NBROW 3
 #define NBCOLUMN 3
 #define NBSQUARE NBROW*NBCOLUMN
-#define DEPTH 3
+#define DEPTH 10
 #define IA 2
 #define PLAYER 1
 
@@ -24,20 +24,17 @@ unsigned short HaveWinRow(unsigned short *tab) {
   }
   return 0;
 }
-
 unsigned short HaveWinColumn(unsigned short *tab) {
   for (int i=0; i<NBCOLUMN;i++) {
     if ((tab[i]==tab[i+3]) && (tab[i]==tab[i+6]) && (tab[i])) return tab[i];
   }
   return 0;
 }
-
 unsigned short HaveWinDiagonal(unsigned short *tab) {
   if ((tab[0] == tab[4]) && (tab[0] == tab[8]) && (tab[0])) return tab[0];
   else if ((tab[6] == tab[4]) && (tab[6] == tab[2]) && (tab[6])) return tab[6];
   else return 0;
 }
-
 unsigned short HaveWin(unsigned short *tab) {
   if (HaveWinRow(tab)) return HaveWinRow(tab);
   else if (HaveWinColumn(tab)) return HaveWinColumn(tab);
@@ -53,9 +50,9 @@ unsigned short AskPosition(unsigned short *tab, unsigned short player){
   unsigned short position;
   char symbols[] = {' ', 'X', 'O'};
   do {
-  printf("Player %c, can you gave me a position (0-8) to play ? \n", symbols[player]);
-  scanf("%1hu", &position);
-  } while (tab[position] != 0);
+  printf("Player %c, can you give me a position (0-8) to play ? \n", symbols[player]);
+  scanf("%hu", &position);
+  } while (position > 8 || tab[position] != 0);
   return position;
 }
 
@@ -73,7 +70,7 @@ unsigned int Eval(unsigned short *tab, unsigned short player){
       if (tab[i]==player) sum +=50;
     }
     else if (i==4) {
-      if (tab[i]==player) sum +=10;
+      if (tab[i]==player) sum +=70;
     }
     else {
       if (tab[i]==player) sum +=1;
@@ -100,20 +97,19 @@ unsigned int Eval(unsigned short *tab, unsigned short player){
   if ((tab[2]==tab[6])&&(tab[4]==0)&&(tab[2]==player)) sum +=1000;
   if ((tab[4]==tab[6])&&(tab[2]==0)&&(tab[4]==player)) sum +=1000;
 
+  if (HaveWin(tab)==player) sum += 10000;
   return sum;
 }
 
 unsigned int CountGrid(unsigned short *tab){
-  return Eval(tab, 2) - Eval(tab,1);
+  return Eval(tab, IA) - Eval(tab,PLAYER);
 }
 
 int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_player){
-  int score, best_score=-10000, worse_score=10000;
-
-  if (HaveWin(tab)==1) return -15000;
-  if (HaveWin(tab)==2) return 15000;
-  if (GridFull(tab)) return 0;
-  if (depth == 0) return CountGrid(tab);
+  int score, best_score=-100000, worse_score=100000;
+  if ((depth == 0)||(GridFull(tab))) return CountGrid(tab);
+  if (HaveWin(tab)==IA) return 10000-depth*5;
+  if (HaveWin(tab)==PLAYER) return -10000+depth*5;
   if(actual_player == IA){
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
@@ -125,7 +121,7 @@ int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_pla
     }
     return best_score;
   }
-  if (actual_player == PLAYER) {
+  else { //(actual_player == PLAYER)
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
         tab[i] = PLAYER;
@@ -134,48 +130,66 @@ int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_pla
         if (score<worse_score) worse_score=score;
       }
     }
-  return worse_score;
-  } 
+    return worse_score;
+  }
+
 }
 
 unsigned short best_shot(unsigned short *tab,unsigned short depth) {
   unsigned short position=10;
-  int score, best_shot=0;
+  int score, best_shot=-100000;
   for (int i=0;i<NBSQUARE;i++) {
     if (tab[i]==0) {
-      score = min_max(tab,DEPTH, 2);
+      tab[i]=IA;
+      score = min_max(tab,DEPTH, PLAYER);
+      tab[i]=0;
       if (score>best_shot) {
         best_shot = score;
         position=i;
       }
     }
   }
-  if (position==10) printf("ALERTE ROUGE !!!!!\n");
+  if (position==10) printf("ALERTE ROUGE !!!!! %d\n", best_shot);
   return position;
+}
+
+unsigned short end_game(unsigned short *tab){
+  if (HaveWin(tab)==1) {
+    printf("You win !!!\n");
+    return 1;
+  }
+  else if (HaveWin(tab)==2) {
+    printf("You lose...\n");
+    return 2; 
+  }
+  else if (GridFull(tab)) {
+    printf("The grid is full, DRAW !\n");
+    return 3;
+  }
+  return 0;
+}
+
+void IA_turn(unsigned short *tab){
+  printf("IA turn\n");
+  unsigned short position = best_shot(tab, DEPTH);
+  PutPiece(tab, position, IA);
+}
+
+void player_turn(unsigned short *tab, unsigned short player){
+  printf("Your turn player : %u\n", player);
+  ShowGrid(tab);
+  unsigned short position = AskPosition(tab, player);
+  PutPiece(tab, position, player);
 }
 
 void game_contre_IA(){
   unsigned short tab[NBSQUARE], position, win=0;
   CreateGrid(tab);
   for(;;) {
-    printf("Your turn\n");
-    ShowGrid(tab);
-    position = AskPosition(tab, PLAYER);
-    PutPiece(tab, position, PLAYER);
-    ShowGrid(tab);
-    if (HaveWin(tab)) {
-      printf("You win !!!\n");
-      break;
-    }
-    if (GridFull(tab)) printf("The grid is full, draw ! \n");
-    printf("IA turn\n");
-    position = best_shot(tab, DEPTH);
-    PutPiece(tab, position, IA);
-    if (HaveWin(tab)) {
-      printf("You lose...\n");
-      break;
-    }
-    if (GridFull(tab)) printf("The grid is full, draw ! \n");
+    player_turn(tab, PLAYER);
+    if (end_game(tab)) break;
+    IA_turn(tab);
+    if (end_game(tab)) break;
   }
 }
 
