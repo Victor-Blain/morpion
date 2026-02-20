@@ -1,10 +1,9 @@
 #include <stdio.h>
+#include <unistd.h>
 #define NBROW 3
 #define NBCOLUMN 3
 #define NBSQUARE NBROW*NBCOLUMN
 #define DEPTH 10
-#define IA 2
-#define PLAYER 1
 
 void CreateGrid(unsigned short *tab){
   for (int i=0; i<NBSQUARE;i++) tab[i]= 0;
@@ -101,55 +100,55 @@ unsigned int Eval(unsigned short *tab, unsigned short player){
   return sum;
 }
 
-unsigned int CountGrid(unsigned short *tab){
-  return Eval(tab, IA) - Eval(tab,PLAYER);
+int CountGrid(unsigned short *tab, unsigned short player_1, unsigned short player_2){
+  return Eval(tab, player_2) - Eval(tab,player_1);
 }
 
-int min_max(unsigned short *tab, unsigned short depth, unsigned short actual_player){
+int min_max(unsigned short *tab, unsigned short depth, unsigned short player_1,unsigned short player_2, unsigned short is_maximizing){
   int score, best_score=-100000, worse_score=100000;
-  if ((depth == 0)||(GridFull(tab))) return CountGrid(tab);
-  if (HaveWin(tab)==IA) return 10000-depth*5;
-  if (HaveWin(tab)==PLAYER) return -10000+depth*5;
-  if(actual_player == IA){
+  if ((depth == 0)||(GridFull(tab))) return CountGrid(tab, player_1, player_2);
+  if (HaveWin(tab)==player_1) return 10000+depth*3;
+  if (HaveWin(tab)==player_2) return -10000-depth*3;
+  if(is_maximizing == 1){
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
-        tab[i] = IA;
-        score = min_max(tab, depth-1, PLAYER);
+        tab[i] = player_1;
+        score = min_max(tab, depth-1, player_1, player_2, 0);
         tab[i] = 0;
         if (score>best_score) best_score=score;
       }
     }
     return best_score;
   }
-  else { //(actual_player == PLAYER)
+  else {
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
-        tab[i] = PLAYER;
-        score = min_max(tab, depth-1, IA);
+        tab[i] = player_2;
+        score = min_max(tab, depth-1, player_1, player_2, 1);
         tab[i] = 0;
         if (score<worse_score) worse_score=score;
       }
     }
     return worse_score;
   }
-
 }
 
-unsigned short best_shot(unsigned short *tab,unsigned short depth) {
+unsigned short best_shot(unsigned short *tab,unsigned short depth, unsigned short player_1, unsigned short player_2) {
   unsigned short position=10;
-  int score, best_shot=-100000;
+  int score, best_score=-100000;
   for (int i=0;i<NBSQUARE;i++) {
     if (tab[i]==0) {
-      tab[i]=IA;
-      score = min_max(tab,DEPTH, PLAYER);
+      tab[i]=player_1;
+      score = min_max(tab,DEPTH-1,player_1,player_2,0);
       tab[i]=0;
-      if (score>best_shot) {
-        best_shot = score;
+      if (score>best_score) {
+        best_score = score;
         position=i;
       }
     }
   }
-  if (position==10) printf("ALERTE ROUGE !!!!! %d\n", best_shot);
+  if (position==10) printf("ALERTE ROUGE !!!!! %d\n", best_score);
+  printf("pos %u score %d\n",position, best_score);
   return position;
 }
 
@@ -169,10 +168,11 @@ unsigned short end_game(unsigned short *tab){
   return 0;
 }
 
-void IA_turn(unsigned short *tab){
+void IA_turn(unsigned short *tab, unsigned short player,unsigned short other_player){
   printf("IA turn\n");
-  unsigned short position = best_shot(tab, DEPTH);
-  PutPiece(tab, position, IA);
+  unsigned short position = best_shot(tab, DEPTH, player, other_player);
+  printf("position chosi : %u\n", position);
+  PutPiece(tab, position, player);
 }
 
 void player_turn(unsigned short *tab, unsigned short player){
@@ -183,17 +183,38 @@ void player_turn(unsigned short *tab, unsigned short player){
 }
 
 void game_contre_IA(){
-  unsigned short tab[NBSQUARE], position, win=0;
+  unsigned short PLAYER = 1;
+  unsigned short IA = 2;
+  unsigned short tab[NBSQUARE];
   CreateGrid(tab);
   for(;;) {
     player_turn(tab, PLAYER);
     if (end_game(tab)) break;
-    IA_turn(tab);
+    IA_turn(tab, IA, PLAYER);
     if (end_game(tab)) break;
   }
 }
 
+void game_IA_IA(){
+  unsigned short IA_1=1, IA_2=2;
+  unsigned short tab[NBSQUARE];
+  CreateGrid(tab);
+  for (;;){
+    sleep(1);
+    IA_turn(tab, IA_1, IA_2);
+    ShowGrid(tab);
+    if (end_game(tab)) break;
+    sleep(1);
+    IA_turn(tab, IA_2, IA_1);
+    ShowGrid(tab);
+    if (end_game(tab)) break;
+  }
+}
+
+
 int main(){
+  //game_contre_IA();
+  game_IA_IA();
   game_contre_IA();
   return 0;
 }
