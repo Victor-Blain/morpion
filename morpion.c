@@ -5,11 +5,11 @@
 #define NBSQUARE NBROW*NBCOLUMN
 #define DEPTH 10
 
-void CreateGrid(unsigned short *tab){
+void create_grid(unsigned short *tab){
   for (int i=0; i<NBSQUARE;i++) tab[i]= 0;
 }
 
-void ShowGrid(unsigned short *tab){
+void show_grid(unsigned short *tab){
   char symbols[] = {' ', 'X', 'O'};
   printf("    0   1   2\n");
   printf("0 | %c | %c | %c |\n", symbols[tab[0]],symbols[tab[1]], symbols[tab[2]]);
@@ -17,35 +17,35 @@ void ShowGrid(unsigned short *tab){
   printf("6 | %c | %c | %c |\n", symbols[tab[6]],symbols[tab[7]], symbols[tab[8]]);
 }
 
-unsigned short HaveWinRow(unsigned short *tab) {
+unsigned short have_win_row(unsigned short *tab) {
   for (int i=0; i<NBSQUARE;i+=3){
     if ((tab[i]==tab[i+1]) && (tab[i]==tab[i+2]) && tab[i]) return tab[i];
   }
   return 0;
 }
-unsigned short HaveWinColumn(unsigned short *tab) {
+unsigned short have_win_column(unsigned short *tab) {
   for (int i=0; i<NBCOLUMN;i++) {
     if ((tab[i]==tab[i+3]) && (tab[i]==tab[i+6]) && (tab[i])) return tab[i];
   }
   return 0;
 }
-unsigned short HaveWinDiagonal(unsigned short *tab) {
+unsigned short have_win_diagonal(unsigned short *tab) {
   if ((tab[0] == tab[4]) && (tab[0] == tab[8]) && (tab[0])) return tab[0];
   else if ((tab[6] == tab[4]) && (tab[6] == tab[2]) && (tab[6])) return tab[6];
   else return 0;
 }
-unsigned short HaveWin(unsigned short *tab) {
-  if (HaveWinRow(tab)) return HaveWinRow(tab);
-  else if (HaveWinColumn(tab)) return HaveWinColumn(tab);
-  else if (HaveWinDiagonal(tab)) return HaveWinDiagonal(tab);
+unsigned short have_win(unsigned short *tab) {
+  if (have_win_row(tab)) return have_win_row(tab);
+  else if (have_win_column(tab)) return have_win_column(tab);
+  else if (have_win_diagonal(tab)) return have_win_diagonal(tab);
   else return 0;
 }
 
-void PutPiece(unsigned short *tab,unsigned short position, unsigned short player){
+void put_piece(unsigned short *tab,unsigned short position, unsigned short player){
   tab[position] = player;
 }
 
-unsigned short AskPosition(unsigned short *tab, unsigned short player){
+unsigned short ask_position(unsigned short *tab, unsigned short player){
   unsigned short position;
   char symbols[] = {' ', 'X', 'O'};
   do {
@@ -55,14 +55,14 @@ unsigned short AskPosition(unsigned short *tab, unsigned short player){
   return position;
 }
 
-unsigned short GridFull(unsigned short *tab){
+unsigned short grid_full(unsigned short *tab){
   for (int i=0;i<NBSQUARE;i++){
     if (tab[i]==0) return 0;
   }
   return 1;
 }
 
-unsigned int Eval(unsigned short *tab, unsigned short player){
+unsigned int eval(unsigned short *tab, unsigned short player){
   int sum=0;
   for(int i=0;i<NBSQUARE;i++){
     if ((i==0)||(i==2)||(i==6)||(i==8)) {
@@ -96,19 +96,19 @@ unsigned int Eval(unsigned short *tab, unsigned short player){
   if ((tab[2]==tab[6])&&(tab[4]==0)&&(tab[2]==player)) sum +=1000;
   if ((tab[4]==tab[6])&&(tab[2]==0)&&(tab[4]==player)) sum +=1000;
 
-  if (HaveWin(tab)==player) sum += 10000;
+  if (have_win(tab)==player) sum += 10000;
   return sum;
 }
 
-int CountGrid(unsigned short *tab, unsigned short player_1, unsigned short player_2){
-  return Eval(tab, player_2) - Eval(tab,player_1);
+int count_gird(unsigned short *tab, unsigned short player_1, unsigned short player_2){
+  return eval(tab, player_2) - eval(tab,player_1);
 }
 
 int min_max(unsigned short *tab, unsigned short depth, unsigned short player_1,unsigned short player_2, unsigned short is_maximizing){
   int score, best_score=-100000, worse_score=100000;
-  if ((depth == 0)||(GridFull(tab))) return CountGrid(tab, player_1, player_2);
-  if (HaveWin(tab)==player_1) return 10000+depth*3;
-  if (HaveWin(tab)==player_2) return -10000-depth*3;
+  if ((depth == 0)||(grid_full(tab))) return count_gird(tab, player_1, player_2);
+  if (have_win(tab)==player_1) return 10000+depth*3;
+  if (have_win(tab)==player_2) return -10000-depth*3;
   if(is_maximizing == 1){
     for(int i=0;i<NBSQUARE;i++){
       if (!tab[i]) {
@@ -153,15 +153,15 @@ unsigned short best_shot(unsigned short *tab,unsigned short depth, unsigned shor
 }
 
 unsigned short end_game(unsigned short *tab){
-  if (HaveWin(tab)==1) {
+  if (have_win(tab)==1) {
     printf("You win !!!\n");
     return 1;
   }
-  else if (HaveWin(tab)==2) {
+  else if (have_win(tab)==2) {
     printf("You lose...\n");
     return 2; 
   }
-  else if (GridFull(tab)) {
+  else if (grid_full(tab)) {
     printf("The grid is full, DRAW !\n");
     return 3;
   }
@@ -172,21 +172,21 @@ void IA_turn(unsigned short *tab, unsigned short player,unsigned short other_pla
   printf("IA turn\n");
   unsigned short position = best_shot(tab, DEPTH, player, other_player);
   printf("position chosi : %u\n", position);
-  PutPiece(tab, position, player);
+  put_piece(tab, position, player);
 }
 
 void player_turn(unsigned short *tab, unsigned short player){
   printf("Your turn player : %u\n", player);
-  ShowGrid(tab);
-  unsigned short position = AskPosition(tab, player);
-  PutPiece(tab, position, player);
+  show_grid(tab);
+  unsigned short position = ask_position(tab, player);
+  put_piece(tab, position, player);
 }
 
 void game_contre_IA(){
   unsigned short PLAYER = 1;
   unsigned short IA = 2;
   unsigned short tab[NBSQUARE];
-  CreateGrid(tab);
+  create_grid(tab);
   for(;;) {
     player_turn(tab, PLAYER);
     if (end_game(tab)) break;
@@ -198,22 +198,20 @@ void game_contre_IA(){
 void game_IA_IA(){
   unsigned short IA_1=1, IA_2=2;
   unsigned short tab[NBSQUARE];
-  CreateGrid(tab);
+  create_grid(tab);
   for (;;){
     sleep(1);
     IA_turn(tab, IA_1, IA_2);
-    ShowGrid(tab);
+    show_grid(tab);
     if (end_game(tab)) break;
     sleep(1);
     IA_turn(tab, IA_2, IA_1);
-    ShowGrid(tab);
+    show_grid(tab);
     if (end_game(tab)) break;
   }
 }
 
-
 int main(){
-  //game_contre_IA();
   game_IA_IA();
   game_contre_IA();
   return 0;
